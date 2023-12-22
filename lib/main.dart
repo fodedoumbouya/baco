@@ -4,7 +4,6 @@ import 'package:baco/common/myLog.dart';
 import 'package:baco/pages/root.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/config.dart';
 
@@ -22,7 +21,7 @@ Future<void> main() async {
 
   runZonedGuarded(
     () {
-      Config.init(() => runApp(const ProviderScope(child: Root())));
+      Config.init(() => runApp(const Root()));
     },
     (Object error, StackTrace stackTrace) {
       AppLog.e("Error FROM OUT_SIDE FRAMEWORK ");
