@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:baco/base/base.dart';
 import 'package:baco/common/adapterHelper/responsive_sizer.dart';
-import 'package:baco/common/constant.dart';
 import 'package:baco/pages/board.dart';
 import 'package:baco/widgets/custom/custom.dart';
 import 'package:baco/widgets/loading_view.dart';
@@ -18,6 +17,8 @@ class Home extends BaseWidget {
 }
 
 class _HomeState extends BaseWidgetState<Home> {
+  String prenom = "";
+  String nom = "";
   Widget myTextField(
       {required String txt, required void Function(String) onChanged}) {
     return CustomContainer(
@@ -41,12 +42,12 @@ class _HomeState extends BaseWidgetState<Home> {
   }
 
   register() async {
+    // http://127.0.0.1:5000/define_user?name=testnom&firstname=prenom
     LoadingView(context: context).wrap(
-      asyncFunction: () => getMap(
-          "define_user?name=${Constant().nom}&firstname=${Constant().prenom}",
-          (callback) {
+      asyncFunction: () =>
+          getMap("define_user?name=$nom&firstname=$prenom", (callback) {
         if (callback == "success") {
-          jumpToPage(const Board());
+          jumpToPage(Board(prenom: prenom, nom: nom));
         } else {
           showDialog(
             context: context,
@@ -97,7 +98,7 @@ class _HomeState extends BaseWidgetState<Home> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       CustomStrokeTextWidget(
-                        "BIENVENUE SUR BACO",
+                        "BIENVENUE SUR GAIA",
                         color: Colors.green,
                         strokeColor: Colors.white,
                         size: 25.sp,
@@ -106,7 +107,7 @@ class _HomeState extends BaseWidgetState<Home> {
                       myTextField(
                         txt: "Prénom",
                         onChanged: (p0) {
-                          Constant().prenom = p0;
+                          prenom = p0;
                           rebuild();
                         },
                       ),
@@ -114,7 +115,7 @@ class _HomeState extends BaseWidgetState<Home> {
                       myTextField(
                         txt: "Nom",
                         onChanged: (p0) {
-                          Constant().nom = p0;
+                          nom = p0;
                           rebuild();
                         },
                       ),
@@ -124,8 +125,7 @@ class _HomeState extends BaseWidgetState<Home> {
                         height: 5.h,
                         child: ElevatedButton(
                             onPressed: () {
-                              if (Constant().prenom.isNotEmpty &&
-                                  Constant().nom.isNotEmpty) {
+                              if (prenom.isNotEmpty && nom.isNotEmpty) {
                                 // toPage(const Board());
                                 register();
                               } else {
@@ -149,8 +149,7 @@ class _HomeState extends BaseWidgetState<Home> {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: (Constant().prenom.isEmpty ||
-                                        Constant().nom.isEmpty)
+                                backgroundColor: (prenom.isEmpty || nom.isEmpty)
                                     ? Colors.green[100]
                                     : Colors.green,
                                 shape: RoundedRectangleBorder(

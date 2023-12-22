@@ -13,7 +13,7 @@ class Root extends StatelessWidget {
   Widget build(BuildContext context) {
     return ResponsiveSizer(builder: (context, orientation, screenType) {
       return MaterialApp(
-        title: "Baco",
+        title: "Gaia",
         debugShowCheckedModeBanner: false,
         home: const Home(),
         // const GamesView(type: GameType.route),

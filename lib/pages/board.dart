@@ -1,7 +1,6 @@
 import 'package:animated_digit/animated_digit.dart';
 import 'package:baco/base/base.dart';
 import 'package:baco/common/adapterHelper/responsive_sizer.dart';
-import 'package:baco/common/constant.dart';
 import 'package:baco/models/enum.dart';
 import 'package:baco/pages/gameView.dart';
 import 'package:baco/widgets/custom/custom.dart';
@@ -13,7 +12,9 @@ import 'package:game_levels_scrolling_map/model/point_model.dart';
 import 'dart:html' as html;
 
 class Board extends BaseWidget {
-  const Board({super.key});
+  final String prenom;
+  final String nom;
+  const Board({required this.prenom, required this.nom, super.key});
 
   @override
   BaseWidgetState<BaseWidget> getState() {
@@ -78,42 +79,42 @@ class _BoardState extends BaseWidgetState<Board> {
     int star = -1;
     if (resp != null) {
       score = int.parse(resp.toString());
+
+      if (score >= 90) {
+        star = 3;
+      } else if (score >= 70) {
+        star = 2;
+      } else if (score >= 50) {
+        star = 1;
+      } else {
+        isCompliated = false;
+        star = 0;
+      }
+      final g = games.firstWhere((element) => element.type == gameType);
+      final index1 = games.indexOf(g);
+      g.score = score;
+      g.star = star;
+      g.isCompliated = isCompliated;
+      if (isCompliated && index1 < games.length - 1) {
+        games[index1 + 1].star = 0;
+      }
+
+      /// calculate total score
+      totalScore = games.fold(0, (previousValue, element) {
+        return previousValue + element.score;
+      });
+
+      /// check if all games are compliated
+      showDownloadCertificat =
+          games.every((element) => element.isCompliated && element.star > 1);
+
+      // rebuild
+      fillTestData();
+
+      print(games.toString());
+
+      rebuild();
     }
-
-    if (score >= 90) {
-      star = 3;
-    } else if (score >= 70) {
-      star = 2;
-    } else if (score >= 50) {
-      star = 1;
-    } else {
-      isCompliated = false;
-      star = 0;
-    }
-    final g = games.firstWhere((element) => element.type == gameType);
-    final index1 = games.indexOf(g);
-    g.score = score;
-    g.star = star;
-    g.isCompliated = isCompliated;
-    if (isCompliated && index1 < games.length - 1) {
-      games[index1 + 1].star = 0;
-    }
-
-    /// calculate total score
-    totalScore = games.fold(0, (previousValue, element) {
-      return previousValue + element.score;
-    });
-
-    /// check if all games are compliated
-    showDownloadCertificat =
-        games.every((element) => element.isCompliated && element.star > 1);
-
-    // rebuild
-    fillTestData();
-
-    print(games.toString());
-
-    rebuild();
   }
 
   Widget testWidget(int order) {
@@ -247,6 +248,8 @@ class _BoardState extends BaseWidgetState<Board> {
   }
 
   void downloadFile(String url) {
+    /// open in new tab
+
     html.AnchorElement anchorElement = html.AnchorElement(href: url);
     anchorElement.download = url;
     anchorElement.click();
@@ -290,9 +293,8 @@ class _BoardState extends BaseWidgetState<Board> {
                           ),
                         ),
                         // const SizedBox(height: 1),
-                        CustomStrokeTextWidget(
-                            "${Constant().nom} ${Constant().prenom}",
-                            color: Colors.blue,
+                        CustomStrokeTextWidget("${widget.nom} ${widget.prenom}",
+                            color: const Color.fromRGBO(102, 32, 31, 1),
                             strokeColor: Colors.white,
                             size: 13.sp),
                         AnimatedDigitWidget(
