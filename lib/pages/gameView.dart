@@ -11,8 +11,6 @@ import 'package:baco/widgets/custom/customContenair.dart';
 import 'package:baco/widgets/custom/customTextWidget.dart';
 import 'package:flutter/material.dart';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'games/house.dart';
 
 class GamesView extends BaseWidget {
