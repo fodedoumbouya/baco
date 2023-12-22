@@ -1,3 +1,5 @@
+import 'package:animated_digit/animated_digit.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:baco/base/base.dart';
 import 'package:baco/common/adapterHelper/responsive_sizer.dart';
 import 'package:baco/common/myLog.dart';
@@ -31,28 +33,43 @@ class _GamesViewState extends BaseWidgetState<GamesView> {
   int isTapndex = -1;
   bool allQuestionDone = false;
   int score = 0;
+  int energyOff = 0;
+  bool displayExplication = false;
 
-  bool isChangingRoom = false;
   List<Game> listGame = [];
   int index = 0;
+  late bool isRoute;
   // HouseType oldHouseType = HouseType.bedroomDark;
 
   @override
   void initState() {
     super.initState();
+    isRoute = widget.type == GameType.route;
+
     getData();
   }
 
   getData() {
-    getMap("game/home", (callback) {
-      int i = 0;
+    String path; //= isRoute ? "route" : "home";
+    if (widget.type == GameType.route) {
+      path = "route";
+    } else if (widget.type == GameType.coffeeShop) {
+      path = "coffee";
+    } else if (widget.type == GameType.office) {
+      path = "work";
+    } else {
+      path = "home";
+    }
+    getMap("game/$path", (callback) {
+      // int i = 0;
       for (var game in callback) {
-        i++;
-        if (i <= 1) {
-          listGame.add(Game.fromJson(game));
-        }
-        // listGame.add(Game.fromJson(game));
+        // i++;
+        // if (i <= 1) {
+        //   listGame.add(Game.fromJson(game));
+        // }
+        listGame.add(Game.fromJson(game));
       }
+      print("listGame:$listGame");
       rebuild();
     }, (o) {});
   }
@@ -71,7 +88,7 @@ class _GamesViewState extends BaseWidgetState<GamesView> {
     } else if (type.contains("LivingRoom")) {
       houseType = HouseType.livingRoomDark;
     }
-    // print("type:$type houseType:$houseType");
+    print("type:$type houseType:$houseType");
 
     return houseType;
   }
@@ -81,230 +98,338 @@ class _GamesViewState extends BaseWidgetState<GamesView> {
     if (isWrongIndex.isEmpty) {
       score += int.parse(game.score!);
     } else {
-      score += int.parse(game.score!) ~/ (isWrongIndex.length + 1);
+      if (game.reponse!.length > 1) {
+        score += int.parse(game.score!) ~/ (isWrongIndex.length + 1);
+      }
     }
     isRightIndex = [];
     isWrongIndex = [];
+    // print("energyOff:$energyOff");
     rebuild();
-    // print("score:$score");
+  }
+
+  calculateEnergy() {
+    Game game = listGame[index];
+    if (isWrongIndex.isEmpty) {
+      energyOff = int.parse(game.energy!) ~/ 2;
+    } else {
+      energyOff = int.parse(game.energy!);
+    }
+    // rebuild();
+  }
+
+  void nextQuestion({int durationMinus = 0}) {
+    Future.delayed(Duration(seconds: 1 - durationMinus), () {
+      showDialog = false;
+      rebuild();
+    });
+
+    Future.delayed(Duration(seconds: 2 - durationMinus), () {
+      displayExplication = false;
+
+      showDialog = true;
+      allAnswer = false;
+      calculateScore();
+
+      if (index == listGame.length - 1) {
+        allQuestionDone = true;
+        showDialog = false;
+      } else {
+        index++;
+      }
+      rebuild();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: LayoutBuilder(builder: (p0, p1) {
-        Size s = p1.biggest;
-        return listGame.isEmpty
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
-            : CustomContainer(
-                h: s.height,
-                w: s.width,
-                child: Stack(
-                  children: [
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        height: s.height,
-                        width: s.width,
-                        child: const RoutePage(),
+    Widget w;
+    if (listGame.isEmpty) {
+      w = const SizedBox.shrink();
+    } else {
+      if (isRoute) {
+        w = RoutePage(
+          chargeOff: energyOff,
+          onChargeOff: () {
+            energyOff = 0;
+            // rebuild();
+          },
+        );
+      } else {
+        HouseType type;
+        if (widget.type == GameType.house) {
+          type = getHouseType(game: listGame[index]);
+        } else if (widget.type == GameType.coffeeShop) {
+          type = HouseType.coffeeShop;
+        } else {
+          type = HouseType.office;
+        }
+        w = House(type: type);
+      }
+    }
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        AwesomeDialog dlg = AwesomeDialog(
+          context: context,
+          dialogType: DialogType.question,
+          animType: AnimType.bottomSlide,
+          title: "Etes-vous sûr de vouloir quitter ?",
+          desc: "Vous allez perdre votre progression",
+          dismissOnTouchOutside: true,
+          btnCancelOnPress: () {},
+          btnOkOnPress: () => pop("0"),
+          btnOkText: "Oui",
+          btnCancelText: "Non",
+          width: 40.w,
+        );
 
-                        // House(
-                        //   type: getHouseType(game: listGame[index]),
-                        // ),
-                      ),
-                    ),
-                    // level completed
-                    Align(
-                        alignment: Alignment.center,
-                        child: allQuestionDone
-                            ? TapRegion(
-                                onTapInside: (event) {
-                                  pop();
-                                },
-                                child: CompletView(
-                                  score: score,
-                                ))
-                            : const SizedBox.shrink()),
+        await dlg.show();
+      },
+      child: Scaffold(
+        body: LayoutBuilder(builder: (p0, p1) {
+          Size s = p1.biggest;
+          return listGame.isEmpty
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : CustomContainer(
+                  h: s.height,
+                  w: s.width,
+                  child: Stack(
+                    children: [
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          height: s.height,
+                          width: s.width,
+                          child: w,
+                          // const RoutePage(),
 
-                    AnimatedPositioned(
-                      duration: const Duration(seconds: 1),
-                      bottom: showDialog ? 0 : -yy(p: 40, s: s),
-                      left: 0,
-                      right: 0,
-                      child: CustomContainer(
-                        h: yy(p: 20, s: s),
-                        // w: xx(p: 50, s: s),
-                        leftM: xx(p: 10, s: s),
-                        rightM: xx(p: 10, s: s),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.white.withOpacity(0.7),
-                            Colors.red.withOpacity(0.7),
-                          ],
+                          // House(
+                          //   type: getHouseType(game: listGame[index]),
+                          // ),
                         ),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Column(
-                          children: [
-                            Flexible(
-                                flex: 2,
-                                child: CustomContainer(
+                      ),
+                      // level completed
+                      Align(
+                          alignment: Alignment.center,
+                          child: allQuestionDone
+                              ? TapRegion(
+                                  onTapInside: (event) {
+                                    pop(score.toString());
+                                  },
+                                  child: CompletView(
+                                    score: score,
+                                    isRoute: isRoute,
+                                  ))
+                              : const SizedBox.shrink()),
+
+                      AnimatedPositioned(
+                        duration: const Duration(seconds: 1),
+                        bottom: showDialog ? 0 : -yy(p: 40, s: s),
+                        left: 0,
+                        right: 0,
+                        child: CustomContainer(
+                          h: yy(p: 20, s: s),
+                          // w: xx(p: 50, s: s),
+                          leftM: xx(p: (isRoute ? 15 : 10), s: s),
+                          rightM: xx(p: 10, s: s),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.white.withOpacity(0.7),
+                              isRoute
+                                  ? const Color.fromRGBO(91, 188, 146, 1)
+                                  : Colors.red.withOpacity(0.7),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Column(
+                            children: [
+                              Flexible(
+                                  flex: 2,
+                                  child: CustomContainer(
+                                      color: Colors.transparent,
+                                      alig: Alignment.center,
+                                      child: Stack(
+                                        children: [
+                                          Align(
+                                            alignment: Alignment.center,
+                                            child: CustomStrokeTextWidget(
+                                              displayExplication
+                                                  ? '"${listGame[index].explication}"'
+                                                  : '"${listGame[index].question}"',
+                                              color: Colors.black,
+                                              strokeColor: Colors.white,
+                                              size: 15.sp,
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: CustomStrokeTextWidget(
+                                              "${index + 1} / ${listGame.length}",
+                                              strokeColor: Colors.black,
+                                              size: 14.sp,
+                                            ),
+                                          ),
+                                        ],
+                                      ))),
+                              Flexible(
+                                  flex: 1,
+                                  child: CustomContainer(
                                     color: Colors.transparent,
                                     alig: Alignment.center,
-                                    child: Stack(
-                                      children: [
-                                        Align(
-                                          alignment: Alignment.center,
-                                          child: CustomStrokeTextWidget(
-                                            '"${listGame[index].question}"',
-                                            color: Colors.white,
-                                            strokeColor: Colors.black,
-                                            size: 15.sp,
-                                          ),
+                                    child: Row(
+                                        mainAxisAlignment: displayExplication
+                                            ? MainAxisAlignment.center
+                                            : MainAxisAlignment.spaceAround,
+                                        children: [
+                                          displayExplication
+                                              ? AnswerBttn(
+                                                  s: s,
+                                                  text: "Suivant",
+                                                  onTap: () {
+                                                    nextQuestion(
+                                                        durationMinus: 1);
+                                                  })
+                                              : const SizedBox.shrink(),
+                                          ...List.generate(
+                                              listGame[index]
+                                                  .reponsesProposEs!
+                                                  .length, (ind) {
+                                            String answer = listGame[index]
+                                                .reponsesProposEs![ind];
+                                            return displayExplication
+                                                ? const SizedBox.shrink()
+                                                : AnswerBttn(
+                                                    s: s,
+                                                    text: answer,
+                                                    isRight: isRightIndex
+                                                        .contains(ind),
+                                                    isWrong: isWrongIndex
+                                                        .contains(ind),
+                                                    allAnswer: allAnswer,
+                                                    onTap: () {
+                                                      if (listGame[index]
+                                                          .reponse!
+                                                          .contains(ind)) {
+                                                        isRightIndex.add(ind);
+                                                      } else {
+                                                        isWrongIndex.add(ind);
+                                                      }
+                                                      if (listGame[index]
+                                                              .reponse!
+                                                              .length ==
+                                                          (isRightIndex.length +
+                                                              isWrongIndex
+                                                                  .length)) {
+                                                        allAnswer = true;
+
+                                                        if (isRoute) {
+                                                          calculateEnergy();
+                                                        }
+                                                        if (isWrongIndex
+                                                            .isNotEmpty) {
+                                                          Future.delayed(
+                                                              const Duration(
+                                                                  seconds: 1),
+                                                              () {
+                                                            displayExplication =
+                                                                true;
+                                                            rebuild();
+                                                          });
+                                                        } else {
+                                                          nextQuestion();
+                                                        }
+                                                      }
+                                                      rebuild();
+                                                    },
+                                                  );
+                                          }),
+                                        ]
+
+                                        // [
+                                        //   AnswerBttn(
+                                        //     s: s,
+                                        //     text: "Quest 1",
+                                        //     isRight: questTap == "Quest 1",
+                                        //     allAnswer: allAnswer,
+                                        //     onTap: () {
+                                        //       questTap = "Quest 1";
+                                        //       allAnswer = true;
+                                        //       setState(() {});
+                                        //       Future.delayed(
+                                        //           const Duration(seconds: 1), () {
+                                        //         showDialog = false;
+                                        //         setState(() {});
+                                        //       });
+
+                                        //       Future.delayed(
+                                        //           const Duration(seconds: 2), () {
+                                        //         setState(() {
+                                        //           showDialog = true;
+                                        //           allAnswer = false;
+                                        //           questTap = "";
+                                        //         });
+                                        //       });
+                                        //     },
+                                        //   ),
+                                        //   AnswerBttn(
+                                        //     s: s,
+                                        //     text: "Quest 2",
+                                        //     allAnswer: allAnswer,
+                                        //     onTap: () {},
+                                        //   ),
+                                        //   AnswerBttn(
+                                        //     s: s,
+                                        //     text: "Quest 1",
+                                        //     allAnswer: allAnswer,
+                                        //     onTap: () {},
+                                        //   ),
+                                        //   AnswerBttn(
+                                        //     s: s,
+                                        //     text: "Quest 2",
+                                        //     allAnswer: allAnswer,
+                                        //     onTap: () {},
+                                        //   ),
+                                        // ],
+
                                         ),
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: CustomStrokeTextWidget(
-                                            "${index + 1} / ${listGame.length}",
-                                            strokeColor: Colors.black,
-                                            size: 14.sp,
-                                          ),
-                                        ),
-                                      ],
-                                    ))),
-                            Flexible(
-                                flex: 1,
-                                child: CustomContainer(
-                                  color: Colors.transparent,
-                                  alig: Alignment.center,
-                                  child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      children: List.generate(
-                                          listGame[index]
-                                              .reponsesProposEs!
-                                              .length, (ind) {
-                                        String answer = listGame[index]
-                                            .reponsesProposEs![ind];
-                                        return AnswerBttn(
-                                          s: s,
-                                          text: answer,
-                                          isRight: isRightIndex.contains(ind),
-                                          isWrong: isWrongIndex.contains(ind),
-                                          allAnswer: allAnswer,
-                                          onTap: () {
-                                            if (listGame[index]
-                                                .reponse!
-                                                .contains(ind)) {
-                                              isRightIndex.add(ind);
-                                            } else {
-                                              isWrongIndex.add(ind);
-                                            }
-                                            if (listGame[index]
-                                                    .reponse!
-                                                    .length ==
-                                                (isRightIndex.length +
-                                                    isWrongIndex.length)) {
-                                              allAnswer = true;
-
-                                              Future.delayed(
-                                                  const Duration(seconds: 1),
-                                                  () {
-                                                showDialog = false;
-                                                rebuild();
-                                              });
-
-                                              Future.delayed(
-                                                  const Duration(seconds: 2),
-                                                  () {
-                                                showDialog = true;
-                                                allAnswer = false;
-                                                calculateScore();
-
-                                                if (index ==
-                                                    listGame.length - 1) {
-                                                  allQuestionDone = true;
-                                                  showDialog = false;
-                                                } else {
-                                                  index++;
-                                                }
-                                                rebuild();
-                                              });
-                                            }
-                                            rebuild();
-                                          },
-                                        );
-                                      })
-
-                                      // [
-                                      //   AnswerBttn(
-                                      //     s: s,
-                                      //     text: "Quest 1",
-                                      //     isRight: questTap == "Quest 1",
-                                      //     allAnswer: allAnswer,
-                                      //     onTap: () {
-                                      //       questTap = "Quest 1";
-                                      //       allAnswer = true;
-                                      //       setState(() {});
-                                      //       Future.delayed(
-                                      //           const Duration(seconds: 1), () {
-                                      //         showDialog = false;
-                                      //         setState(() {});
-                                      //       });
-
-                                      //       Future.delayed(
-                                      //           const Duration(seconds: 2), () {
-                                      //         setState(() {
-                                      //           showDialog = true;
-                                      //           allAnswer = false;
-                                      //           questTap = "";
-                                      //         });
-                                      //       });
-                                      //     },
-                                      //   ),
-                                      //   AnswerBttn(
-                                      //     s: s,
-                                      //     text: "Quest 2",
-                                      //     allAnswer: allAnswer,
-                                      //     onTap: () {},
-                                      //   ),
-                                      //   AnswerBttn(
-                                      //     s: s,
-                                      //     text: "Quest 1",
-                                      //     allAnswer: allAnswer,
-                                      //     onTap: () {},
-                                      //   ),
-                                      //   AnswerBttn(
-                                      //     s: s,
-                                      //     text: "Quest 2",
-                                      //     allAnswer: allAnswer,
-                                      //     onTap: () {},
-                                      //   ),
-                                      // ],
-
-                                      ),
-                                )),
-                          ],
+                                  )),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
 
-                    // AnimatedPositioned(
-                    //     left: isChangingRoom ? s.width : -s.width,
-                    //     duration: const Duration(seconds: 2),
-                    //     child: CustomContainer(
-                    //       h: s.height,
-                    //       w: s.width,
-                    //       color: Colors.black,
-                    //     ))
-                  ],
-                ),
-              );
-      }),
+                      // AnimatedPositioned(
+                      //     left: isChangingRoom ? s.width : -s.width,
+                      //     duration: const Duration(seconds: 2),
+                      //     child: CustomContainer(
+                      //       h: s.height,
+                      //       w: s.width,
+                      //       color: Colors.black,
+                      //     ))
+
+                      Positioned(
+                          top: 1.h,
+                          right: 0.3.w,
+                          child: AnimatedDigitWidget(
+                            value: score,
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ))
+                    ],
+                  ),
+                );
+        }),
+      ),
     );
   }
 }
@@ -369,10 +494,12 @@ class AnswerBttn extends StatelessWidget {
 
 class CompletView extends StatelessWidget {
   final int score;
-  const CompletView({required this.score, super.key});
+  final bool isRoute;
+  const CompletView({required this.score, required this.isRoute, super.key});
 
   @override
   Widget build(BuildContext context) {
+    Color color = isRoute ? Colors.red : Colors.green;
     return LayoutBuilder(builder: (context, p1) {
       Size s = p1.biggest;
       return CustomContainer(
@@ -384,7 +511,7 @@ class CompletView extends StatelessWidget {
           children: [
             CustomStrokeTextWidget(
               "LEVEL COMPLETED",
-              color: Colors.green,
+              color: color,
               fontWeight: FontWeight.bold,
               strokeColor: Colors.white,
               size: 20.sp,
@@ -394,7 +521,7 @@ class CompletView extends StatelessWidget {
             ),
             CustomStrokeTextWidget(
               "SCORE: $score/100",
-              color: Colors.green,
+              color: color,
               fontWeight: FontWeight.bold,
               strokeColor: Colors.white,
               size: 20.sp,

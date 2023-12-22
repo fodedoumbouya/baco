@@ -25,7 +25,8 @@ class _HouseState extends BaseWidgetState<House> {
     HouseType.bedroomDark,
     HouseType.garrage,
     HouseType.livingRoomDark,
-    HouseType.livingRoomLight
+    HouseType.livingRoomLight,
+    HouseType.office
   ];
   bool isLeft = false;
 /* 
@@ -69,10 +70,10 @@ bottom: 0%
         image = "bathroom";
         break;
       case HouseType.bedroomDark:
-        image = "bedroomDark";
+        image = "bedRoomDark";
         break;
       case HouseType.bedroomLight:
-        image = "bedroomLight";
+        image = "bedRoomLight";
         break;
       case HouseType.kitchen:
         image = "kitchen";
@@ -84,7 +85,13 @@ bottom: 0%
         image = "livingRoomDark";
         break;
       case HouseType.livingRoomLight:
-        image = "livingRoomLight";
+        image = "livingRoomDay";
+        break;
+      case HouseType.office:
+        image = "office";
+        break;
+      case HouseType.coffeeShop:
+        image = "coffeShop";
         break;
       default:
         image = "bathroom";
@@ -111,7 +118,7 @@ bottom: 0%
           h: s.height,
           w: s.width,
           image: image,
-          centerSlice: Rect.fromLTWH(0, 0, s.width, s.height),
+          // centerSlice: Rect.fromLTWH(0, 0, s.width, s.height),
           child: Stack(
             children: [
               Positioned(

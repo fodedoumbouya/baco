@@ -1,9 +1,15 @@
 import 'package:baco/base/base.dart';
+import 'package:baco/common/adapterHelper/responsive_sizer.dart';
 import 'package:baco/widgets/custom/customContenair.dart';
+import 'package:baco/widgets/custom/customImageWidget.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_progress_indicator_v2/liquid_progress_indicator.dart';
 
 class RoutePage extends BaseWidget {
-  const RoutePage({super.key});
+  final int chargeOff;
+  final FunctionEmptyCallback onChargeOff;
+  const RoutePage(
+      {required this.chargeOff, required this.onChargeOff, super.key});
 
   @override
   BaseWidgetState<BaseWidget> getState() {
@@ -74,7 +80,17 @@ class _RouteState extends BaseWidgetState<RoutePage> {
   bool passtweetyThreeS = false;
   bool passFourFourNine = false;
 
+  static const int carDuration = 1000;
+
   Battery battery = Battery(pourcentage: 100, status: "Charger"); //Battery
+
+  double _xx(double x) {
+    return 100.w / 1920.0 * x;
+  }
+
+  double _yy(double y) {
+    return 100.h / 1200 * y;
+  }
 
   genereteGround() {
     bool isNewLine = false;
@@ -133,48 +149,59 @@ class _RouteState extends BaseWidgetState<RoutePage> {
   @override
   void initState() {
     genereteGround();
-    getData();
     super.initState();
   }
 
-  void removeFromBattery({required int add}) {
-    add += car.ground.index;
-    if (!passFivetweent && (add > 10 && add < 15)) {
-      battery.pourcentage -= 2;
-      passFivetweent = true;
+  @override
+  void didUpdateWidget(covariant RoutePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.chargeOff != oldWidget.chargeOff && widget.chargeOff > 0) {
+      print("here----------energyOff--------------- ${widget.chargeOff}");
+      removeBattery(energy: widget.chargeOff);
     }
-    if (!passtweetyThreeS && (add > 30 && add < 37)) {
-      battery.pourcentage -= 2;
-      passtweetyThreeS = true;
-    }
-    if (!passFourFourNine && (add > 40 && add < 49)) {
-      battery.pourcentage -= 2;
-      passFourFourNine = true;
-    }
-
-    //--
-    if (!passEight && add > 8) {
-      battery.pourcentage += 1;
-      passEight = true;
-    }
-    if (!passtweetyTwo && add > 22) {
-      battery.pourcentage += 1;
-      passtweetyTwo = true;
-    }
-    if (!passFourFour && add > 44) {
-      battery.pourcentage += 1;
-      passFourFour = true;
-    }
-    setState(() {});
   }
+
+  void removeBattery({required int energy}) {
+    battery.pourcentage -= energy;
+    widget.onChargeOff.call();
+    // rebuild();
+    moveCar(moveCase: 10);
+  }
+  // void removeFromBattery({required int add}) {
+  //   add += car.ground.index;
+  //   if (!passFivetweent && (add > 10 && add < 15)) {
+  //     battery.pourcentage -= 2;
+  //     passFivetweent = true;
+  //   }
+  //   if (!passtweetyThreeS && (add > 30 && add < 37)) {
+  //     battery.pourcentage -= 2;
+  //     passtweetyThreeS = true;
+  //   }
+  //   if (!passFourFourNine && (add > 40 && add < 49)) {
+  //     battery.pourcentage -= 2;
+  //     passFourFourNine = true;
+  //   }
+
+  //   //--
+  //   if (!passEight && add > 8) {
+  //     battery.pourcentage += 1;
+  //     passEight = true;
+  //   }
+  //   if (!passtweetyTwo && add > 22) {
+  //     battery.pourcentage += 1;
+  //     passtweetyTwo = true;
+  //   }
+  //   if (!passFourFour && add > 44) {
+  //     battery.pourcentage += 1;
+  //     passFourFour = true;
+  //   }
+  //   setState(() {});
+  // }
 
   moveCar({required int moveCase}) async {
     if (car.ground.index == 50) {
       return;
     }
-    hour++;
-    getData();
-    battery.pourcentage -= (moveCase * 2);
     if (car.quarterTurns == 1) {
       int add = car.ground.index + moveCase;
       if (add <= 10 || (add > 20 && add <= 30) || (add > 40 && add <= 60)) {
@@ -204,14 +231,14 @@ class _RouteState extends BaseWidgetState<RoutePage> {
         car.ground = g;
 
         setState(() {});
-        await Future.delayed(const Duration(seconds: 1));
+        await Future.delayed(const Duration(milliseconds: carDuration));
         car.quarterTurns = 2;
         g = list.firstWhere((element) => element.index == b);
         car.position = getOffsetsPositionsLocal(g.key);
         car.ground = g;
 
         setState(() {});
-        await Future.delayed(const Duration(seconds: 1));
+        await Future.delayed(const Duration(milliseconds: carDuration));
         g = list.firstWhere((element) => element.index == (b - rest));
         car.position = getOffsetsPositionsLocal(g.key);
         car.quarterTurns = 3;
@@ -219,12 +246,12 @@ class _RouteState extends BaseWidgetState<RoutePage> {
 
         setState(() {});
       }
-      removeFromBattery(add: add.abs());
+      // removeFromBattery(add: add.abs());
     } else if (car.quarterTurns == 3) {
       int m = car.ground.index - moveCase;
       print("here-------------------------2222222 $m");
       if (((m >= 11 && m < 20) || (m >= 31 && m <= 11))) {
-        removeFromBattery(add: m.abs());
+        // removeFromBattery(add: m.abs());
         print("here----------------------------???? $m");
         if (car.ground.index == 31 || (m >= 31 && m <= 11)) {
           int a = 31;
@@ -274,11 +301,11 @@ class _RouteState extends BaseWidgetState<RoutePage> {
         }
 
         int rest = a - car.ground.index;
-        removeFromBattery(add: rest.abs());
+        // removeFromBattery(add: rest.abs());
         print("rest:==== $rest ");
 
         rest = moveCase - rest.abs();
-        removeFromBattery(add: rest.abs());
+        // removeFromBattery(add: rest.abs());
         print("rest: ......$rest ");
 
         rest = rest.abs();
@@ -313,7 +340,210 @@ class _RouteState extends BaseWidgetState<RoutePage> {
         return CustomContainer(
           h: s.height,
           w: s.width,
-          color: Colors.black,
+          color: const Color.fromRGBO(91, 188, 146, 1),
+          child: Stack(fit: StackFit.expand, children: [
+            Align(
+              alignment: Alignment.center,
+              child: SizedBox(
+                height: s.height,
+                width: s.width,
+                child: GridView.count(
+                  crossAxisCount: 10,
+                  children: List.generate(list.length, (index) {
+                    Ground g = list[index];
+                    return GestureDetector(
+                      onTap: () {},
+                      child: Container(
+                          key: g.key,
+                          color: index % 2 == 0 ? Colors.amber : g.testColor,
+                          alignment: Alignment.center,
+                          child: Stack(
+                            children: [
+                              RotatedBox(
+                                quarterTurns: g.isGoingDown ? 2 : 0,
+                                child: CustomImageWidget(
+                                  g.img,
+                                  height: yy(p: 20, s: s),
+                                  fit: BoxFit.cover,
+                                  directory: "assets/route",
+                                ),
+                              ),
+                              // Text("${g.index}"),
+                            ],
+                          )
+                          //
+
+                          ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+            AnimatedPositioned(
+                top: car.position.dy,
+                left: car.position.dx,
+                duration: const Duration(milliseconds: carDuration),
+                child: RotatedBox(
+                  quarterTurns: car.quarterTurns,
+                  child: SizedBox(
+                    height: _yy(150),
+                    width: _xx(150),
+                    child: CustomImageWidget(
+                      car.image,
+                      // fit: BoxFit.fitWidth,
+                      directory: "assets/route",
+                    ),
+                  ),
+                )),
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: GestureDetector(
+                onTap: () {
+                  // battery.status = "chargement";
+                  // setState(() {});
+                  // if (IsFavorable) {
+                  //   battery.pourcentage += 4;
+                  // } else {
+                  //   battery.pourcentage += 2;
+                  // }
+                  // if (battery.pourcentage >= 100) {
+                  //   battery.pourcentage = 100;
+                  // }
+                  // battery.status = "charger";
+                  // hour++;
+                  // setState(() {});
+
+                  // getData();
+                  moveCar(moveCase: 10);
+                },
+                child: SizedBox(
+                  height: _yy(220),
+                  width: _xx(250),
+                  // color: Colors.blue,
+                  child: LiquidCircularProgressIndicator(
+                    value: battery.pourcentage / 100, // Defaults to 0.5.
+
+                    valueColor: AlwaysStoppedAnimation(battery.pourcentage >= 50
+                        ? Colors.green
+                        : Colors
+                            .red), // Defaults to the current Theme's accentColor.
+                    backgroundColor: Colors
+                        .white, // Defaults to the current Theme's backgroundColor.
+                    borderColor: battery.pourcentage >= 50
+                        ? Colors.green
+                        : Colors
+                            .red, // Defaults to the current Theme's accentColor.
+                    borderWidth: 5.0,
+                    direction: Axis
+                        .vertical, // The direction the liquid moves (Axis.vertical = bottom to top, Axis.horizontal = left to right). Defaults to Axis.vertical.
+                    center: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "${battery.pourcentage}%",
+                          style: TextStyle(
+                              color: battery.pourcentage > 50
+                                  ? Colors.white
+                                  : Colors.black),
+                        ),
+                        Text(
+                          battery.status,
+                          style: TextStyle(
+                              color: battery.pourcentage > 50
+                                  ? Colors.white
+                                  : Colors.black),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Positioned(
+            //     bottom: _yy(0),
+            //     left: _xx(700),
+            //     child: SizedBox(
+            //       height: _yy(320),
+            //       width: _xx(350),
+            //       // color: Colors.black,
+            //       child: IconButton(
+            //         icon: const Icon(Icons.home),
+            //         onPressed: () {
+            //           onTap = false;
+            //           setState(() {});
+            //           moveCar(moveCase: 2);
+            //         },
+            //       ),
+            //     )),
+            // Positioned(
+            //     bottom: _yy(0),
+            //     right: _xx(200),
+            //     child: SizedBox(
+            //       height: _yy(320),
+            //       width: _xx(350),
+            //       // color: Colors.orange,
+            //       child: GestureDetector(
+            //         onTap: () {
+            //           if (!onTap) {
+            //             onTap = true;
+            //             setState(() {});
+            //           }
+            //         },
+            //         child: Center(
+            //           child: Container(
+            //               width: 200,
+            //               height: 200,
+            //               decoration: BoxDecoration(
+            //                   color: onTap ? Colors.blue : Colors.grey[300],
+            //                   shape: BoxShape.circle,
+            //                   boxShadow: [
+            //                     BoxShadow(
+            //                         color: onTap
+            //                             ? Colors.blue
+            //                             : const Color(0xFF757575),
+            //                         offset: const Offset(4.0, 4.0),
+            //                         blurRadius: 15.0,
+            //                         spreadRadius: 1.0),
+            //                     BoxShadow(
+            //                         color: onTap ? Colors.blue : Colors.white,
+            //                         offset: const Offset(-4.0, -4.0),
+            //                         blurRadius: 15.0,
+            //                         spreadRadius: 1.0),
+            //                   ],
+            //                   gradient: LinearGradient(
+            //                       begin: Alignment.topLeft,
+            //                       end: Alignment.bottomRight,
+            //                       colors: [
+            //                         onTap
+            //                             ? Colors.red
+            //                             : const Color(0xFFEEEEEE),
+            //                         onTap
+            //                             ? Colors.red
+            //                             : const Color(0xFFE0E0E0),
+            //                         onTap
+            //                             ? Colors.red
+            //                             : const Color(0XFFBDBDBD),
+            //                         onTap
+            //                             ? Colors.red
+            //                             : const Color(0xFF9E9E9E),
+            //                       ],
+            //                       stops: const [
+            //                         0.1,
+            //                         0.3,
+            //                         0.8,
+            //                         0.9
+            //                       ])),
+            //               child: Center(
+            //                   child: Text(
+            //                 "Lancer le dé",
+            //                 style: TextStyle(
+            //                   color: onTap ? Colors.white : Colors.black,
+            //                 ),
+            //               ))),
+            //         ),
+            //       ),
+            //     )),
+          ]),
         );
       }),
     );

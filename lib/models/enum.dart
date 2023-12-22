@@ -6,6 +6,8 @@ enum HouseType {
   garrage,
   livingRoomDark,
   livingRoomLight,
+  office,
+  coffeeShop,
 }
 
-enum GameType { house, route }
+enum GameType { house, route, office, coffeeShop }

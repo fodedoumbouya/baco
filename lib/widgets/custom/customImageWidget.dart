@@ -23,6 +23,7 @@ class CustomImageWidget extends StatelessWidget {
       key: key,
       "$directory/$img.$imgType",
       fit: fit,
+      color: Colors.transparent,
       height: height,
       width: width,
     );

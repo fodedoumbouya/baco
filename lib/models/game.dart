@@ -9,6 +9,7 @@ class Game {
   String? score;
   String? time;
   String? type;
+  String? energy;
 
   Game(
       {this.categories,
@@ -19,6 +20,7 @@ class Game {
       this.reponse,
       this.reponsesProposEs,
       this.score,
+      this.energy,
       this.time,
       this.type});
 
@@ -32,6 +34,7 @@ class Game {
     reponsesProposEs = json['reponses_proposées'].cast<String>();
     score = json['score'];
     time = json['time'];
+    energy = json['energy'];
     type = json['type'];
   }
 
@@ -45,6 +48,7 @@ class Game {
     data['reponse'] = reponse;
     data['reponses_proposées'] = reponsesProposEs;
     data['score'] = score;
+    data['energy'] = energy;
     data['time'] = time;
     data['type'] = type;
     return data;

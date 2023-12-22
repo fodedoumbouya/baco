@@ -14,6 +14,7 @@ abstract class BaseWidget extends StatefulWidget {
 }
 
 typedef FunctionVoidCallback = void Function(void o);
+typedef FunctionEmptyCallback = void Function();
 
 abstract class BaseWidgetState<T extends BaseWidget> extends State<T>
     with WidgetsBindingObserver {
